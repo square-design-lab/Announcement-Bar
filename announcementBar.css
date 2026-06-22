@@ -16,6 +16,7 @@
   text-transform: var(--sdl-ab-text-transform, none);
   overflow: hidden;
   z-index: 9999;
+  pointer-events: auto;
   opacity: 0;
   transition: opacity 0.3s ease, height 0.3s ease;
   line-height: 1;
