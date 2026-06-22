@@ -1,0 +1,268 @@
+/* =========================================================================
+   sdlAnnouncementBar — Styles
+   ========================================================================= */
+
+/* ── Base bar ────────────────────────────────────────────── */
+.sdl-ab {
+  position: relative;
+  width: 100%;
+  height: var(--sdl-ab-height, 40px);
+  background: var(--sdl-ab-bg, #1a1a1a);
+  color: var(--sdl-ab-color, #ffffff);
+  font-family: var(--sdl-ab-font-family, inherit);
+  font-size: var(--sdl-ab-font-size, 14px);
+  font-weight: var(--sdl-ab-font-weight, 400);
+  letter-spacing: var(--sdl-ab-letter-spacing, 0);
+  text-transform: var(--sdl-ab-text-transform, none);
+  overflow: hidden;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease, height 0.3s ease;
+  line-height: 1;
+}
+
+.sdl-ab-visible { opacity: 1; }
+
+.sdl-ab-closing {
+  height: 0 !important;
+  opacity: 0 !important;
+}
+
+.sdl-ab a,
+.sdl-ab a:visited { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.sdl-ab a:hover { opacity: 0.8; }
+.sdl-ab-link { text-decoration: none !important; }
+.sdl-ab-link:hover { opacity: 0.8; }
+
+/* ── Inner wrapper ───────────────────────────────────────── */
+.sdl-ab-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.sdl-ab-bar-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* ── Close button ────────────────────────────────────────── */
+.sdl-ab-close {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+.sdl-ab-close:hover { opacity: 1; }
+
+/* ── Icons ───────────────────────────────────────────────── */
+.sdl-ab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.sdl-ab-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.sdl-ab-icon-rotate img {
+  animation: sdl-ab-spin var(--sdl-ab-rotate-speed, 3s) linear infinite;
+}
+
+@keyframes sdl-ab-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── TEXT ITEMS ───────────────────────────────────────────── */
+.sdl-ab-text-item {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* =================================================================
+   MODE: MARQUEE
+   ================================================================= */
+.sdl-ab-marquee-wrap {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+}
+
+.sdl-ab-track {
+  display: flex;
+  align-items: center;
+  gap: var(--sdl-ab-gap, 60px);
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.sdl-ab-track-animate {
+  animation: sdl-ab-marquee var(--sdl-ab-duration, 20s) linear infinite;
+}
+.sdl-ab-track-right.sdl-ab-track-animate {
+  animation-name: sdl-ab-marquee-right;
+}
+
+.sdl-ab-pause-hover:hover { animation-play-state: paused; }
+.sdl-ab-pause-hover:hover .sdl-ab-icon-rotate img { animation-play-state: paused; }
+
+@keyframes sdl-ab-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes sdl-ab-marquee-right {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+/* =================================================================
+   MODE: ROTATING
+   ================================================================= */
+.sdl-ab-rotate-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sdl-ab-rotate-item {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.sdl-ab-rotate-item.sdl-ab-rotate-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* slideUp exit */
+[data-animation="slideUp"] .sdl-ab-rotate-item.sdl-ab-rotate-exit {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+/* slideDown: enter from top */
+[data-animation="slideDown"] .sdl-ab-rotate-item {
+  transform: translateY(-100%);
+}
+[data-animation="slideDown"] .sdl-ab-rotate-item.sdl-ab-rotate-active {
+  transform: translateY(0);
+}
+[data-animation="slideDown"] .sdl-ab-rotate-item.sdl-ab-rotate-exit {
+  transform: translateY(100%);
+  opacity: 0;
+}
+/* fade */
+[data-animation="fade"] .sdl-ab-rotate-item {
+  transform: none;
+}
+[data-animation="fade"] .sdl-ab-rotate-item.sdl-ab-rotate-active {
+  opacity: 1;
+}
+[data-animation="fade"] .sdl-ab-rotate-item.sdl-ab-rotate-exit {
+  opacity: 0;
+}
+
+/* =================================================================
+   MODE: STATIC + COUNTDOWN
+   ================================================================= */
+.sdl-ab-static-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 0 40px;
+}
+
+.sdl-ab-static-text {
+  white-space: nowrap;
+}
+
+/* Countdown */
+.sdl-ab-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sdl-ab-countdown-left  { order: -1; }
+.sdl-ab-countdown-right { order: 1; }
+
+.sdl-ab-cd-unit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.sdl-ab-cd-num {
+  font-weight: 700;
+  font-size: 1em;
+}
+
+.sdl-ab-cd-label {
+  font-size: 0.75em;
+  opacity: 0.7;
+  text-transform: none;
+}
+
+.sdl-ab-cd-sep {
+  margin: 0 2px;
+  opacity: 0.5;
+}
+
+.sdl-ab-countdown-expired {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* =================================================================
+   RESPONSIVE
+   ================================================================= */
+@media (max-width: 767px) {
+  .sdl-ab {
+    height: var(--sdl-ab-mobile-height, 36px);
+    font-size: var(--sdl-ab-mobile-font-size, 12px);
+  }
+  .sdl-ab-close { right: 8px; }
+  .sdl-ab-close svg { width: 12px; height: 12px; }
+  .sdl-ab-static-wrap { padding: 0 30px; gap: 12px; }
+}

@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Announcement Bar — Config Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-body: #F5F5F7;
+            --bg-sidebar: #FFFFFF;
+            --text-main: #1C1C1E;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-light: #E5E5E5;
+            --border-hover: #D4D4D4;
+            --border-active: #18181B;
+            --accent: #18181B;
+            --accent-hover: #09090B;
+            --accent-contrast: #FFFFFF;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --sidebar-width: 380px;
+            --header-height: 60px;
+            --danger: #EF4444;
+            --danger-bg: #FEF2F2;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0; padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            font-size: 13px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── SIDEBAR ─────────────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .sidebar-header {
+            height: var(--header-height);
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-header h2 {
+            font-size: 15px; font-weight: 700; margin: 0;
+            display: flex; align-items: center; gap: 10px;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-icon {
+            width: 30px; height: 30px;
+            background: var(--accent); color: #fff;
+            border-radius: 8px;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header .badge {
+            font-size: 10px; background: #F4F4F5;
+            padding: 2px 7px; border-radius: 4px;
+            color: #52525B; font-weight: 600; border: 1px solid #D4D4D8;
+        }
+
+        .sidebar-content {
+            flex: 1; overflow-y: auto; padding: 24px;
+        }
+        .sidebar-content::-webkit-scrollbar { width: 6px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: #E5E5E5; border-radius: 3px; }
+        .sidebar-content::-webkit-scrollbar-thumb:hover { background: #D4D4D4; }
+
+        /* ── GROUPS ──────────────────────────────────────── */
+        .group { margin-bottom: 24px; }
+
+        .group-header {
+            font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.07em;
+            color: var(--text-tertiary);
+            margin-bottom: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: color 0.2s;
+        }
+        .group-header:hover { color: var(--text-main); }
+        .group-header::after {
+            content: ''; width: 6px; height: 6px;
+            border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+            transform: rotate(45deg); transition: transform 0.2s; margin-right: 4px;
+        }
+        .group.open .group-header::after { transform: rotate(-135deg); }
+        .group-body { display: none; }
+        .group.open .group-body { display: block; animation: slideIn 0.2s ease-out; }
+        @keyframes slideIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── CONTROLS ────────────────────────────────────── */
+        .control-row { margin-bottom: 16px; }
+
+        label {
+            display: block; font-size: 13px; font-weight: 500;
+            margin-bottom: 6px; color: var(--text-main);
+        }
+
+        .helper-text {
+            font-size: 11px; color: var(--text-secondary);
+            margin-top: 6px; line-height: 1.4;
+        }
+
+        input[type="text"], input[type="number"], input[type="url"],
+        input[type="datetime-local"], select, textarea {
+            width: 100%; height: 36px; padding: 0 10px;
+            font-family: inherit; font-size: 13px;
+            border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+            background: #fff; color: var(--text-main);
+            transition: all 0.15s; appearance: none;
+        }
+        textarea { height: auto; padding: 8px 10px; resize: vertical; min-height: 60px; line-height: 1.5; }
+        input:hover, select:hover, textarea:hover { border-color: var(--border-hover); }
+        input:focus, select:focus, textarea:focus { border-color: var(--border-active); box-shadow: 0 0 0 3px rgba(0,0,0,0.08); }
+
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
+            padding-right: 30px;
+        }
+
+        /* Toggle */
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; min-height: 24px;
+        }
+        .toggle-row label { margin: 0; font-weight: 400; color: var(--text-secondary); }
+
+        input[type="checkbox"] {
+            appearance: none; width: 36px; height: 20px;
+            background: #E5E5E5; border-radius: 20px; position: relative;
+            cursor: pointer; transition: 0.2s; border: none; flex-shrink: 0;
+        }
+        input[type="checkbox"]::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 16px; height: 16px; background: #fff; border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input[type="checkbox"]:checked { background: var(--accent); }
+        input[type="checkbox"]:checked::after { transform: translateX(16px); }
+
+        /* Color picker */
+        .color-row {
+            display: flex; flex-direction: column; gap: 8px;
+            background: #FAFAFA; padding: 12px; border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+        .color-chip { display: flex; align-items: center; justify-content: space-between; }
+        .color-chip .color-label { font-size: 12px; font-weight: 500; }
+        input[type="color"] {
+            width: 28px; height: 28px; padding: 0;
+            border: 1.5px solid #B8B8B8; border-radius: 50%;
+            overflow: hidden; cursor: pointer; background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+        /* Mode selector cards */
+        .mode-cards {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+        }
+        .mode-card {
+            padding: 12px 8px; border: 1.5px solid var(--border-light); border-radius: var(--radius-md);
+            text-align: center; cursor: pointer; transition: all 0.15s;
+            background: #fff;
+        }
+        .mode-card:hover { border-color: var(--border-hover); }
+        .mode-card.active { border-color: var(--accent); background: #F9F9F9; }
+        .mode-card .mode-icon { font-size: 20px; margin-bottom: 4px; }
+        .mode-card .mode-label { font-size: 11px; font-weight: 600; }
+
+        /* Text block cards */
+        .text-block-list { display: flex; flex-direction: column; gap: 8px; }
+        .text-block-card {
+            background: #FAFAFA; border: 1px solid var(--border-light); border-radius: var(--radius-md);
+            padding: 12px; position: relative;
+        }
+        .text-block-card .tb-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .text-block-card .tb-num {
+            font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+            background: #ECECEC; padding: 2px 8px; border-radius: 4px;
+        }
+        .text-block-card .tb-delete {
+            background: none; border: none; color: var(--text-tertiary);
+            cursor: pointer; padding: 2px; transition: color 0.15s;
+        }
+        .text-block-card .tb-delete:hover { color: var(--danger); }
+        .text-block-card input, .text-block-card select { margin-bottom: 8px; }
+        .text-block-card input:last-child, .text-block-card select:last-child { margin-bottom: 0; }
+
+        .tb-inline-links { margin-top: 8px; }
+        .tb-inline-link-row {
+            display: flex; gap: 6px; align-items: center; margin-bottom: 6px;
+        }
+        .tb-inline-link-row input { margin-bottom: 0 !important; flex: 1; height: 30px; font-size: 12px; }
+        .tb-inline-link-row button {
+            background: none; border: none; color: var(--text-tertiary);
+            cursor: pointer; padding: 2px; flex-shrink: 0;
+        }
+        .tb-inline-link-row button:hover { color: var(--danger); }
+
+        .add-btn {
+            width: 100%; padding: 8px; border: 1.5px dashed var(--border-light);
+            border-radius: var(--radius-sm); background: none;
+            color: var(--text-secondary); font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Icon cards */
+        .icon-card {
+            background: #FAFAFA; border: 1px solid var(--border-light); border-radius: var(--radius-md);
+            padding: 12px; display: flex; gap: 12px; align-items: center; margin-bottom: 8px;
+        }
+        .icon-card .icon-preview {
+            width: 40px; height: 40px; border-radius: 6px; background: #ECECEC;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; overflow: hidden;
+        }
+        .icon-card .icon-preview img { max-width: 32px; max-height: 32px; object-fit: contain; }
+        .icon-card .icon-controls { flex: 1; }
+        .icon-card .icon-controls .toggle-row { margin-bottom: 6px; }
+        .icon-card .icon-controls .toggle-row label { font-size: 11px; }
+        .icon-card .icon-delete {
+            background: none; border: none; color: var(--text-tertiary);
+            cursor: pointer; align-self: flex-start; padding: 2px;
+        }
+        .icon-card .icon-delete:hover { color: var(--danger); }
+
+        .upload-btn {
+            width: 100%; padding: 10px; border: 1.5px dashed var(--border-light);
+            border-radius: var(--radius-sm); background: none;
+            color: var(--text-secondary); font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Slider row */
+        .slider-row { display: flex; align-items: center; gap: 10px; }
+        .slider-row input[type="range"] {
+            flex: 1; height: 4px; appearance: none; background: #E5E5E5;
+            border-radius: 2px; border: none; padding: 0;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            appearance: none; width: 16px; height: 16px; background: var(--accent);
+            border-radius: 50%; cursor: pointer; border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .slider-row .slider-val {
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+            min-width: 36px; text-align: right;
+        }
+
+        /* ── MAIN CONTENT ────────────────────────────────── */
+        .main-content {
+            flex: 1; display: flex; flex-direction: column;
+            background: #F5F5F7; position: relative;
+        }
+
+        .topbar {
+            height: var(--header-height); padding: 0 24px;
+            border-bottom: 1px solid var(--border-light);
+            background: #fff; display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .device-toggle { background: #F2F2F2; padding: 2px; border-radius: 6px; display: flex; }
+        .device-toggle button {
+            border: none; background: transparent; padding: 6px 12px;
+            font-size: 12px; font-weight: 500; color: var(--text-secondary);
+            cursor: pointer; border-radius: 4px; transition: 0.2s;
+        }
+        .device-toggle button.active { background: #fff; color: var(--text-main); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        .copy-btn {
+            background: var(--accent); color: var(--accent-contrast); border: none;
+            padding: 9px 20px; border-radius: 7px; font-weight: 600; font-size: 13px;
+            letter-spacing: -0.01em; cursor: pointer; display: flex; align-items: center; gap: 7px;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+        }
+        .copy-btn:hover { background: var(--accent-hover); }
+        .copy-btn:active { transform: scale(0.97); }
+        .copy-btn.copied { background: #0EA5E9; box-shadow: 0 1px 3px rgba(14,165,233,0.3); }
+
+        /* ── PREVIEW ─────────────────────────────────────── */
+        .preview-container {
+            flex: 1; overflow-y: auto; padding: 40px;
+            display: flex; justify-content: center; align-items: flex-start;
+            background-image: radial-gradient(#E1E1E1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #previewFrame {
+            background: #fff; width: 100%; max-width: 1100px;
+            min-height: 500px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-radius: var(--radius-lg); overflow: hidden;
+            transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid var(--border-light);
+        }
+        #previewFrame.mobile {
+            width: 375px; border-radius: 30px; border: 8px solid #333;
+        }
+
+        /* Mock website preview */
+        .mock-bar {
+            width: 100%; overflow: hidden; position: relative;
+            line-height: 1;
+        }
+        .mock-bar a, .mock-bar a:visited { color: inherit; }
+        .mock-header {
+            background: #fefef5; padding: 16px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #eee;
+        }
+        .mock-logo { font-family: Georgia, serif; font-size: 18px; font-weight: 400; color: #151414; }
+        .mock-nav { display: flex; gap: 20px; }
+        .mock-nav span { font-size: 13px; color: #666; }
+        .mock-hero {
+            background: linear-gradient(135deg, #f5f0eb, #e8e0d8);
+            height: 300px; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+        }
+        .mock-hero-title { font-family: Georgia, serif; font-size: 32px; color: #151414; }
+        .mock-hero-sub { font-size: 14px; color: #666; }
+
+        /* ── CODE DRAWER ─────────────────────────────────── */
+        .code-drawer {
+            height: 250px; background: #0D0D0D; color: #E1E1E1;
+            display: flex; flex-direction: column;
+            border-top: 1px solid var(--border-light);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .drawer-header {
+            padding: 10px 24px; background: #1A1A1A;
+            border-bottom: 1px solid #333;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .drawer-header h3 {
+            margin: 0; font-size: 11px; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #888;
+        }
+        #codeOutput {
+            flex: 1; padding: 24px; margin: 0;
+            overflow: auto; font-size: 12px; line-height: 1.6; color: #A9B7C6;
+        }
+        #codeOutput .hl-tag { color: #6B8CAE; }
+        #codeOutput .hl-key { color: #E5BF78; }
+        #codeOutput .hl-str { color: #87C98F; }
+        #codeOutput .hl-bool { color: #79B8FF; }
+        #codeOutput .hl-num { color: #FF9D7C; }
+        #codeOutput .hl-kw { color: #C678DD; }
+        #codeOutput .hl-cmt { color: #5C6370; font-style: italic; }
+
+        /* ── MOBILE TABS ─────────────────────────────────── */
+        .mobile-tabs { display: none; }
+        .mobile-copy-btn { display: none; }
+
+        @media (max-width: 1023px) {
+            body { flex-direction: column; height: 100vh; overflow: hidden; }
+            .main-content { display: none; }
+            .sidebar {
+                position: fixed; top: 0; left: 0; right: 0;
+                bottom: calc(68px + env(safe-area-inset-bottom));
+                width: 100%; border-right: none; display: none;
+                flex-direction: column; z-index: 50;
+            }
+            .sidebar-header { flex-shrink: 0; }
+            .mobile-tabs {
+                display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+                background: #fff; border-top: 1px solid #E5E5E5; z-index: 100;
+                height: 68px; padding: 8px 12px;
+                padding-bottom: calc(8px + env(safe-area-inset-bottom));
+                gap: 6px; align-items: stretch;
+            }
+            .tab-btn {
+                flex: 1; border: none; background: transparent; color: var(--text-tertiary);
+                font-size: 11px; font-weight: 500; font-family: inherit; cursor: pointer;
+                border-radius: 10px; display: flex; flex-direction: column;
+                align-items: center; justify-content: center; gap: 4px;
+                transition: background 0.18s, color 0.18s;
+            }
+            .tab-btn svg { opacity: 0.5; transition: opacity 0.18s; }
+            .tab-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
+            .tab-btn.active svg { opacity: 1; }
+            .mobile-copy-btn { display: flex; }
+            body.tab-edit .sidebar { display: flex; }
+            body.tab-edit .main-content { display: none; }
+            body.tab-preview .sidebar { display: none; }
+            body.tab-preview .main-content {
+                display: flex; position: fixed; top:0; left:0; right:0;
+                bottom: calc(68px + env(safe-area-inset-bottom)); height: auto;
+            }
+            body.tab-preview .code-drawer { display: none; }
+            body.tab-code .sidebar { display: none; }
+            body.tab-code .main-content {
+                display: flex; position: fixed; top:0; left:0; right:0;
+                bottom: calc(68px + env(safe-area-inset-bottom)); height: auto;
+            }
+            body.tab-code .preview-container { display: none; }
+            body.tab-code .code-drawer { flex: 1; height: auto; }
+        }
+
+        /* ── Hidden ──────────────────────────────────────── */
+        .hidden { display: none !important; }
+
+        /* ── LIVE PREVIEW MARQUEE (inside config generator) ── */
+        .mock-ab-track {
+            display: flex; align-items: center; gap: 60px;
+            white-space: nowrap; will-change: transform;
+        }
+        .mock-ab-track.animating {
+            animation: mock-marquee var(--mock-duration, 15s) linear infinite;
+        }
+        .mock-ab-track.animating-right {
+            animation: mock-marquee-right var(--mock-duration, 15s) linear infinite;
+        }
+        .mock-ab-track.pause-hover:hover { animation-play-state: paused; }
+        .mock-ab-track .mock-ab-icon img { display: block; object-fit: contain; }
+        .mock-ab-track .mock-ab-icon.rotating img { animation: mock-spin 3s linear infinite; }
+        .mock-ab-track.pause-hover:hover .rotating img { animation-play-state: paused; }
+
+        @keyframes mock-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes mock-marquee-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+        @keyframes mock-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+        /* Rotating preview */
+        .mock-ab-rotate-wrap {
+            position: relative; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .mock-ab-rotate-item {
+            position: absolute; width: 100%; text-align: center;
+            opacity: 0; transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s;
+        }
+        .mock-ab-rotate-item.active { opacity: 1; transform: translateY(0); }
+        .mock-ab-rotate-item.exiting { opacity: 0; transform: translateY(-100%); }
+
+        /* Countdown preview */
+        .mock-ab-static { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; height: 100%; padding: 0 30px; }
+        .mock-ab-cd { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+        .mock-ab-cd-unit { display: inline-flex; align-items: baseline; gap: 1px; }
+        .mock-ab-cd-num { font-weight: 700; }
+        .mock-ab-cd-label { font-size: 0.75em; opacity: 0.7; }
+        .mock-ab-cd-sep { margin: 0 2px; opacity: 0.5; }
+        .mock-ab-cd-right { order: 1; }
+        .mock-ab-cd-left { order: -1; }
+
+        /* Mask for marquee edges */
+        .mock-bar-marquee-inner {
+            width: 100%; height: 100%; overflow: hidden;
+            display: flex; align-items: center;
+            mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+        }
+    </style>
+</head>
+<body class="tab-edit">
+
+    <!-- ═══════════════ SIDEBAR ═══════════════ -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>
+                <span class="brand-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
+                </span>
+                Announcement Bar
+            </h2>
+            <span class="badge">v1.0</span>
+            <button class="copy-btn mobile-copy-btn" onclick="copyCode()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy
+            </button>
+        </div>
+
+        <div class="sidebar-content">
+
+            <!-- MODE -->
+            <div class="group open">
+                <div class="group-header" onclick="toggleGroup(this)">Display Mode</div>
+                <div class="group-body">
+                    <div class="mode-cards">
+                        <div class="mode-card active" data-mode="marquee" onclick="setMode('marquee')">
+                            <div class="mode-icon">↔</div>
+                            <div class="mode-label">Marquee</div>
+                        </div>
+                        <div class="mode-card" data-mode="rotating" onclick="setMode('rotating')">
+                            <div class="mode-icon">↕</div>
+                            <div class="mode-label">Rotating</div>
+                        </div>
+                        <div class="mode-card" data-mode="static" onclick="setMode('static')">
+                            <div class="mode-icon">⏱</div>
+                            <div class="mode-label">Countdown</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TEXT BLOCKS -->
+            <div class="group open">
+                <div class="group-header" onclick="toggleGroup(this)">Text Blocks</div>
+                <div class="group-body">
+                    <div id="textBlockList" class="text-block-list"></div>
+                    <button class="add-btn" onclick="addTextBlock()" style="margin-top:10px">+ Add Text Block</button>
+                </div>
+            </div>
+
+            <!-- ICONS -->
+            <div class="group open" id="iconGroup">
+                <div class="group-header" onclick="toggleGroup(this)">Icons (Between Texts)</div>
+                <div class="group-body">
+                    <div id="iconList"></div>
+                    <input type="file" id="iconUpload" accept="image/*" style="display:none" onchange="handleIconUpload(event)">
+                    <button class="upload-btn" onclick="document.getElementById('iconUpload').click()" style="margin-top:8px">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload Icon
+                    </button>
+                    <div class="helper-text">SVG or PNG recommended. Icons appear between text blocks in marquee mode.</div>
+                </div>
+            </div>
+
+            <!-- BAR SETTINGS -->
+            <div class="group open">
+                <div class="group-header" onclick="toggleGroup(this)">Bar Settings</div>
+                <div class="group-body">
+                    <div class="control-row">
+                        <label>Height (desktop)</label>
+                        <div class="slider-row">
+                            <input type="range" min="28" max="80" value="40" oninput="S.bar.height=+this.value;this.nextElementSibling.textContent=this.value+'px';update()">
+                            <span class="slider-val">40px</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Height (mobile)</label>
+                        <div class="slider-row">
+                            <input type="range" min="24" max="60" value="36" oninput="S.bar.mobileHeight=+this.value;this.nextElementSibling.textContent=this.value+'px';update()">
+                            <span class="slider-val">36px</span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Show close button</label>
+                        <input type="checkbox" checked onchange="S.bar.closable=this.checked;update()">
+                    </div>
+
+                    <div class="control-row">
+                        <label>Link type</label>
+                        <select id="barLinkType" onchange="handleBarLinkType(this.value)">
+                            <option value="none">No bar link</option>
+                            <option value="bar">Entire bar links to one URL</option>
+                        </select>
+                    </div>
+                    <div class="control-row hidden" id="barLinkUrlRow">
+                        <label>Bar Link URL</label>
+                        <input type="url" placeholder="https://..." value="" oninput="S.bar.barLinkUrl=this.value;update()">
+                    </div>
+                    <div class="control-row hidden" id="barLinkTargetRow">
+                        <label>Open in</label>
+                        <select onchange="S.bar.barLinkTarget=this.value;update()">
+                            <option value="_self">Same tab</option>
+                            <option value="_blank">New tab</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MARQUEE SETTINGS -->
+            <div class="group open" id="marqueeGroup">
+                <div class="group-header" onclick="toggleGroup(this)">Marquee Settings</div>
+                <div class="group-body">
+                    <div class="control-row">
+                        <label>Speed</label>
+                        <div class="slider-row">
+                            <input type="range" min="10" max="200" value="50" oninput="S.marquee.speed=+this.value;this.nextElementSibling.textContent=this.value;update()">
+                            <span class="slider-val">50</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Gap between items</label>
+                        <div class="slider-row">
+                            <input type="range" min="20" max="200" value="60" oninput="S.marquee.gap=+this.value;this.nextElementSibling.textContent=this.value+'px';update()">
+                            <span class="slider-val">60px</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Direction</label>
+                        <select onchange="S.marquee.direction=this.value;update()">
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Pause on hover</label>
+                        <input type="checkbox" checked onchange="S.marquee.pauseOnHover=this.checked;update()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROTATING SETTINGS -->
+            <div class="group open hidden" id="rotatingGroup">
+                <div class="group-header" onclick="toggleGroup(this)">Rotation Settings</div>
+                <div class="group-body">
+                    <div class="control-row">
+                        <label>Interval (ms)</label>
+                        <div class="slider-row">
+                            <input type="range" min="1000" max="10000" step="500" value="3000" oninput="S.rotating.interval=+this.value;this.nextElementSibling.textContent=(this.value/1000)+'s';update()">
+                            <span class="slider-val">3s</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Animation</label>
+                        <select onchange="S.rotating.animation=this.value;update()">
+                            <option value="slideUp">Slide Up</option>
+                            <option value="slideDown">Slide Down</option>
+                            <option value="fade">Fade</option>
+                        </select>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Pause on hover</label>
+                        <input type="checkbox" checked onchange="S.rotating.pauseOnHover=this.checked;update()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- COUNTDOWN SETTINGS -->
+            <div class="group open hidden" id="countdownGroup">
+                <div class="group-header" onclick="toggleGroup(this)">Countdown Settings</div>
+                <div class="group-body">
+                    <div class="control-row">
+                        <label>Target date &amp; time</label>
+                        <input type="datetime-local" id="countdownDate" onchange="S.countdown.targetDate=this.value;update()">
+                    </div>
+                    <div class="control-row">
+                        <label>Expired text</label>
+                        <input type="text" value="Event has started!" oninput="S.countdown.expiredText=this.value;update()">
+                    </div>
+                    <div class="toggle-row">
+                        <label>Show labels (d, h, m, s)</label>
+                        <input type="checkbox" checked onchange="S.countdown.showLabels=this.checked;update()">
+                    </div>
+                    <div class="control-row">
+                        <label>Label style</label>
+                        <select onchange="S.countdown.labelStyle=this.value;update()">
+                            <option value="short">Short (d, h, m, s)</option>
+                            <option value="full">Full (days, hours, ...)</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Separator</label>
+                        <input type="text" value=":" maxlength="3" style="width:60px" oninput="S.countdown.separator=this.value;update()">
+                    </div>
+                    <div class="control-row">
+                        <label>Timer position</label>
+                        <select onchange="S.countdown.position=this.value;update()">
+                            <option value="right">Right of text</option>
+                            <option value="left">Left of text</option>
+                            <option value="inline">Inline (no text)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TYPOGRAPHY -->
+            <div class="group open">
+                <div class="group-header" onclick="toggleGroup(this)">Typography</div>
+                <div class="group-body">
+                    <div class="control-row">
+                        <label>Font source</label>
+                        <select onchange="S.style.fontSource=this.value;update()">
+                            <option value="body">Site body font</option>
+                            <option value="heading">Site heading font</option>
+                        </select>
+                        <div class="helper-text">Automatically uses your Squarespace site's font.</div>
+                    </div>
+                    <div class="control-row">
+                        <label>Font size (desktop)</label>
+                        <div class="slider-row">
+                            <input type="range" min="10" max="24" value="14" oninput="S.style.fontSize=+this.value;this.nextElementSibling.textContent=this.value+'px';update()">
+                            <span class="slider-val">14px</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Font size (mobile)</label>
+                        <div class="slider-row">
+                            <input type="range" min="8" max="20" value="12" oninput="S.style.mobileFontSize=+this.value;this.nextElementSibling.textContent=this.value+'px';update()">
+                            <span class="slider-val">12px</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Font weight</label>
+                        <select onchange="S.style.fontWeight=+this.value;update()">
+                            <option value="300">Light (300)</option>
+                            <option value="400" selected>Regular (400)</option>
+                            <option value="500">Medium (500)</option>
+                            <option value="600">Semibold (600)</option>
+                            <option value="700">Bold (700)</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Letter spacing</label>
+                        <div class="slider-row">
+                            <input type="range" min="0" max="5" step="0.5" value="0" oninput="S.style.letterSpacing=+this.value;this.nextElementSibling.textContent=this.value+'px';update()">
+                            <span class="slider-val">0px</span>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>Text transform</label>
+                        <select onchange="S.style.textTransform=this.value;update()">
+                            <option value="none">None</option>
+                            <option value="uppercase">UPPERCASE</option>
+                            <option value="lowercase">lowercase</option>
+                            <option value="capitalize">Capitalize</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLORS -->
+            <div class="group open">
+                <div class="group-header" onclick="toggleGroup(this)">Colors</div>
+                <div class="group-body">
+                    <div class="toggle-row">
+                        <label>Auto-detect from site theme</label>
+                        <input type="checkbox" checked id="useThemeToggle" onchange="S.style.useTheme=this.checked;toggleColorInputs();update()">
+                    </div>
+                    <div class="helper-text" style="margin-top:-6px;margin-bottom:12px">Reads colors from your Squarespace announcement bar or header automatically.</div>
+                    <div id="colorInputs">
+                        <div class="color-row">
+                            <div class="color-chip">
+                                <span class="color-label">Background</span>
+                                <input type="color" id="bgColorInput" value="#1a1a1a" onchange="S.style.bgColor=this.value;update()">
+                            </div>
+                            <div class="color-chip">
+                                <span class="color-label">Text</span>
+                                <input type="color" id="textColorInput" value="#ffffff" onchange="S.style.textColor=this.value;update()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+    <main class="main-content">
+        <div class="topbar">
+            <div class="device-toggle">
+                <button class="active" onclick="setDevice('desktop', this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Desktop
+                </button>
+                <button onclick="setDevice('mobile', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+                    Mobile
+                </button>
+            </div>
+            <button class="copy-btn" onclick="copyCode()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy Code
+            </button>
+        </div>
+
+        <div class="preview-container">
+            <div id="previewFrame">
+                <div id="previewBarArea"></div>
+                <div class="mock-header">
+                    <div class="mock-logo">Your Website</div>
+                    <div class="mock-nav"><span>Shop</span><span>About</span><span>Contact</span></div>
+                </div>
+                <div class="mock-hero">
+                    <div class="mock-hero-title">Welcome to the Store</div>
+                    <div class="mock-hero-sub">Discover our latest collection</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-drawer">
+            <div class="drawer-header">
+                <h3>Generated Code</h3>
+            </div>
+            <pre id="codeOutput"></pre>
+        </div>
+    </main>
+
+    <!-- ═══════════════ MOBILE TABS ═══════════════ -->
+    <nav class="mobile-tabs">
+        <button class="tab-btn active" onclick="setTab('edit', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Settings
+        </button>
+        <button class="tab-btn" onclick="setTab('preview', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+        </button>
+        <button class="tab-btn" onclick="setTab('code', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Code
+        </button>
+    </nav>
+
+    <script>
+    /* ═══════════════════════════════════════════════════════════════
+       STATE
+       ═══════════════════════════════════════════════════════════════ */
+    const S = {
+        mode: "marquee",
+        bar: { height: 40, mobileHeight: 36, closable: true, closeId: "sdl-ab-1", barLinkUrl: "", barLinkTarget: "_self" },
+        style: { useTheme: true, bgColor: "#1a1a1a", textColor: "#ffffff", fontSource: "body", fontSize: 14, mobileFontSize: 12, fontWeight: 400, letterSpacing: 0, textTransform: "none" },
+        marquee: { speed: 50, direction: "left", pauseOnHover: true, gap: 60 },
+        rotating: { interval: 3000, animation: "slideUp", pauseOnHover: true },
+        countdown: { targetDate: "", expiredText: "Event has started!", showLabels: true, labelStyle: "short", separator: ":", position: "right" },
+        texts: [
+            { content: "Free shipping on all orders over $50", linkUrl: "", linkTarget: "_self", linkType: "none", inlineLinks: [] },
+            { content: "New arrivals just dropped — Shop now", linkUrl: "/shop", linkTarget: "_self", linkType: "block", inlineLinks: [] }
+        ],
+        icons: []
+    };
+
+    let previewRotateTimer = null;
+    let previewCountdownTimer = null;
+    let currentDevice = "desktop";
+    let previewRotateIdx = 0;
+
+    /* ═══════════════════════════════════════════════════════════════
+       UI HELPERS
+       ═══════════════════════════════════════════════════════════════ */
+    function toggleGroup(el) {
+        el.parentElement.classList.toggle("open");
+    }
+
+    function setTab(tab, btn) {
+        document.body.className = "tab-" + tab;
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        if (tab === "preview") updatePreview();
+    }
+
+    function setDevice(dev, btn) {
+        currentDevice = dev;
+        document.querySelectorAll(".device-toggle button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const frame = document.getElementById("previewFrame");
+        frame.classList.toggle("mobile", dev === "mobile");
+        updatePreview();
+    }
+
+    function setMode(mode) {
+        S.mode = mode;
+        document.querySelectorAll(".mode-card").forEach(c => c.classList.toggle("active", c.dataset.mode === mode));
+        document.getElementById("marqueeGroup").classList.toggle("hidden", mode !== "marquee");
+        document.getElementById("rotatingGroup").classList.toggle("hidden", mode !== "rotating");
+        document.getElementById("countdownGroup").classList.toggle("hidden", mode !== "static");
+        document.getElementById("iconGroup").classList.toggle("hidden", mode !== "marquee");
+        update();
+    }
+
+    function toggleColorInputs() {
+        const show = !document.getElementById("useThemeToggle").checked;
+        document.getElementById("colorInputs").style.display = show ? "block" : "none";
+    }
+
+    function handleBarLinkType(val) {
+        document.getElementById("barLinkUrlRow").classList.toggle("hidden", val === "none");
+        document.getElementById("barLinkTargetRow").classList.toggle("hidden", val === "none");
+        if (val === "none") { S.bar.barLinkUrl = ""; }
+        update();
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TEXT BLOCKS
+       ═══════════════════════════════════════════════════════════════ */
+    function renderTextBlocks() {
+        const list = document.getElementById("textBlockList");
+        list.innerHTML = "";
+        S.texts.forEach(function (t, i) {
+            const card = document.createElement("div");
+            card.className = "text-block-card";
+            card.innerHTML =
+                '<div class="tb-header">' +
+                    '<span class="tb-num">Text ' + (i + 1) + '</span>' +
+                    '<button class="tb-delete" onclick="removeTextBlock(' + i + ')" title="Delete">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>' +
+                    '</button>' +
+                '</div>' +
+                '<input type="text" value="' + escAttr(t.content) + '" placeholder="Enter text..." oninput="S.texts[' + i + '].content=this.value;update()">' +
+                '<select onchange="handleTextLinkType(' + i + ',this.value)">' +
+                    '<option value="none"' + (t.linkType === "none" ? " selected" : "") + '>No link</option>' +
+                    '<option value="block"' + (t.linkType === "block" ? " selected" : "") + '>Link entire text</option>' +
+                    '<option value="inline"' + (t.linkType === "inline" ? " selected" : "") + '>Link specific words</option>' +
+                '</select>' +
+                '<div class="tb-block-link' + (t.linkType === "block" ? "" : " hidden") + '">' +
+                    '<input type="url" value="' + escAttr(t.linkUrl) + '" placeholder="Link URL (e.g. /shop)" oninput="S.texts[' + i + '].linkUrl=this.value;update()">' +
+                    '<select onchange="S.texts[' + i + '].linkTarget=this.value;update()" style="margin-top:6px">' +
+                        '<option value="_self"' + (t.linkTarget === "_self" ? " selected" : "") + '>Same tab</option>' +
+                        '<option value="_blank"' + (t.linkTarget === "_blank" ? " selected" : "") + '>New tab</option>' +
+                    '</select>' +
+                '</div>' +
+                '<div class="tb-inline-links' + (t.linkType === "inline" ? "" : " hidden") + '">' +
+                    buildInlineLinksHTML(i, t.inlineLinks) +
+                    '<button class="add-btn" onclick="addInlineLink(' + i + ')" style="margin-top:6px;font-size:11px;padding:5px">+ Add word link</button>' +
+                '</div>';
+            list.appendChild(card);
+        });
+    }
+
+    function buildInlineLinksHTML(textIdx, links) {
+        if (!links || !links.length) return "";
+        return links.map(function (lnk, j) {
+            return '<div class="tb-inline-link-row">' +
+                '<input type="text" value="' + escAttr(lnk.text) + '" placeholder="Word(s)" oninput="S.texts[' + textIdx + '].inlineLinks[' + j + '].text=this.value;update()">' +
+                '<input type="url" value="' + escAttr(lnk.url) + '" placeholder="URL" oninput="S.texts[' + textIdx + '].inlineLinks[' + j + '].url=this.value;update()">' +
+                '<button onclick="removeInlineLink(' + textIdx + ',' + j + ')" title="Remove">' +
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                '</button></div>';
+        }).join("");
+    }
+
+    function handleTextLinkType(i, val) {
+        S.texts[i].linkType = val;
+        if (val !== "block") S.texts[i].linkUrl = "";
+        if (val !== "inline") S.texts[i].inlineLinks = [];
+        renderTextBlocks();
+        update();
+    }
+
+    function addTextBlock() {
+        S.texts.push({ content: "", linkUrl: "", linkTarget: "_self", linkType: "none", inlineLinks: [] });
+        renderTextBlocks();
+        update();
+    }
+
+    function removeTextBlock(i) {
+        if (S.texts.length <= 1) return;
+        S.texts.splice(i, 1);
+        renderTextBlocks();
+        update();
+    }
+
+    function addInlineLink(textIdx) {
+        if (!S.texts[textIdx].inlineLinks) S.texts[textIdx].inlineLinks = [];
+        S.texts[textIdx].inlineLinks.push({ text: "", url: "", target: "_self" });
+        renderTextBlocks();
+    }
+
+    function removeInlineLink(textIdx, linkIdx) {
+        S.texts[textIdx].inlineLinks.splice(linkIdx, 1);
+        renderTextBlocks();
+        update();
+    }
+
+    function escAttr(s) { return (s || "").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ICONS
+       ═══════════════════════════════════════════════════════════════ */
+    function renderIcons() {
+        const list = document.getElementById("iconList");
+        list.innerHTML = "";
+        S.icons.forEach(function (icon, i) {
+            const card = document.createElement("div");
+            card.className = "icon-card";
+            card.innerHTML =
+                '<div class="icon-preview"><img src="' + icon.src + '" alt="icon"></div>' +
+                '<div class="icon-controls">' +
+                    '<div class="control-row" style="margin-bottom:6px">' +
+                        '<label style="font-size:11px;margin-bottom:3px">Size</label>' +
+                        '<div class="slider-row">' +
+                            '<input type="range" min="10" max="40" value="' + (icon.size || 16) + '" oninput="S.icons[' + i + '].size=+this.value;this.nextElementSibling.textContent=this.value+\'px\';update()">' +
+                            '<span class="slider-val">' + (icon.size || 16) + 'px</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="toggle-row">' +
+                        '<label>Rotate</label>' +
+                        '<input type="checkbox"' + (icon.rotate ? " checked" : "") + ' onchange="S.icons[' + i + '].rotate=this.checked;update()">' +
+                    '</div>' +
+                    (icon.rotate ?
+                    '<div class="control-row" style="margin-bottom:0">' +
+                        '<label style="font-size:11px;margin-bottom:3px">Speed</label>' +
+                        '<div class="slider-row">' +
+                            '<input type="range" min="1" max="10" step="0.5" value="' + (icon.rotateSpeed || 3) + '" oninput="S.icons[' + i + '].rotateSpeed=+this.value;this.nextElementSibling.textContent=this.value+\'s\';update()">' +
+                            '<span class="slider-val">' + (icon.rotateSpeed || 3) + 's</span>' +
+                        '</div>' +
+                    '</div>' : '') +
+                '</div>' +
+                '<button class="icon-delete" onclick="removeIcon(' + i + ')" title="Delete">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                '</button>';
+            list.appendChild(card);
+        });
+    }
+
+    function handleIconUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+            S.icons.push({ src: ev.target.result, size: 16, rotate: false, rotateSpeed: 3 });
+            renderIcons();
+            update();
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    }
+
+    function removeIcon(i) {
+        S.icons.splice(i, 1);
+        renderIcons();
+        update();
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PREVIEW
+       ═══════════════════════════════════════════════════════════════ */
+    function update() {
+        updatePreview();
+        generateCode();
+    }
+
+    function getDisplayContent(t) {
+        let html = t.content;
+        if (t.linkType === "inline" && t.inlineLinks && t.inlineLinks.length) {
+            t.inlineLinks.forEach(function (lnk) {
+                if (lnk.text && lnk.url) {
+                    html = html.replace(
+                        new RegExp(escRegex(lnk.text), "g"),
+                        '<a href="' + escAttr(lnk.url) + '" target="' + (lnk.target || "_self") + '" style="color:inherit;text-decoration:underline;text-underline-offset:2px">' + lnk.text + '</a>'
+                    );
+                }
+            });
+        }
+        if (t.linkType === "block" && t.linkUrl) {
+            html = '<a href="' + escAttr(t.linkUrl) + '" target="' + (t.linkTarget || "_self") + '" style="color:inherit;text-decoration:none">' + html + '</a>';
+        }
+        return html;
+    }
+
+    function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+    function updatePreview() {
+        clearInterval(previewRotateTimer);
+        clearInterval(previewCountdownTimer);
+
+        const area = document.getElementById("previewBarArea");
+        const isMobile = currentDevice === "mobile";
+        const h = isMobile ? S.bar.mobileHeight : S.bar.height;
+        const fs = isMobile ? S.style.mobileFontSize : S.style.fontSize;
+        const bg = S.style.bgColor;
+        const clr = S.style.textColor;
+
+        let barStyle = 'background:' + bg + ';color:' + clr + ';height:' + h + 'px;' +
+            'font-size:' + fs + 'px;font-weight:' + S.style.fontWeight + ';' +
+            'letter-spacing:' + S.style.letterSpacing + 'px;' +
+            'text-transform:' + S.style.textTransform + ';' +
+            'display:flex;align-items:center;position:relative;overflow:hidden;line-height:1;';
+
+        let inner = "";
+
+        if (S.mode === "marquee") {
+            inner = buildMarqueePreview();
+        } else if (S.mode === "rotating") {
+            inner = buildRotatingPreview();
+        } else if (S.mode === "static") {
+            inner = buildStaticPreview();
+        }
+
+        let closeBtn = "";
+        if (S.bar.closable) {
+            closeBtn = '<span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;opacity:0.6;display:flex">' +
+                '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>';
+        }
+
+        area.innerHTML = '<div class="mock-bar" style="' + barStyle + '">' + inner + closeBtn + '</div>';
+
+        if (S.mode === "marquee") initMarqueePreview();
+        if (S.mode === "rotating") initRotatingPreview();
+        if (S.mode === "static") initCountdownPreview();
+    }
+
+    /* Marquee preview */
+    function buildMarqueePreview() {
+        let items = "";
+        S.texts.forEach(function (t, i) {
+            items += '<span style="white-space:nowrap">' + getDisplayContent(t) + '</span>';
+            if (S.icons.length > 0) {
+                const icon = S.icons[i % S.icons.length];
+                const rotCls = icon.rotate ? " rotating" : "";
+                items += '<span class="mock-ab-icon' + rotCls + '" style="display:inline-flex;align-items:center;flex-shrink:0;margin:0 4px">' +
+                    '<img src="' + icon.src + '" style="width:' + (icon.size || 16) + 'px;height:' + (icon.size || 16) + 'px;' +
+                    (icon.rotate ? '--mock-spin-speed:' + (icon.rotateSpeed || 3) + 's' : '') + '" />' +
+                    '</span>';
+            }
+        });
+        return '<div class="mock-bar-marquee-inner"><div class="mock-ab-track' +
+            (S.marquee.pauseOnHover ? ' pause-hover' : '') +
+            '" style="gap:' + S.marquee.gap + 'px">' + items + '</div></div>';
+    }
+
+    function initMarqueePreview() {
+        const track = document.querySelector(".mock-ab-track");
+        if (!track) return;
+
+        requestAnimationFrame(function () {
+            const singleW = track.scrollWidth;
+            track.innerHTML += track.innerHTML;
+            const dur = singleW / S.marquee.speed;
+            track.style.setProperty("--mock-duration", dur + "s");
+            track.classList.add(S.marquee.direction === "right" ? "animating-right" : "animating");
+        });
+    }
+
+    /* Rotating preview */
+    function buildRotatingPreview() {
+        let items = S.texts.map(function (t) {
+            return '<div class="mock-ab-rotate-item">' + getDisplayContent(t) + '</div>';
+        }).join("");
+        return '<div class="mock-ab-rotate-wrap">' + items + '</div>';
+    }
+
+    function initRotatingPreview() {
+        const items = document.querySelectorAll(".mock-ab-rotate-item");
+        if (items.length < 1) return;
+        previewRotateIdx = 0;
+        items[0].classList.add("active");
+
+        if (items.length < 2) return;
+
+        function rotate() {
+            const prev = items[previewRotateIdx];
+            previewRotateIdx = (previewRotateIdx + 1) % items.length;
+            const next = items[previewRotateIdx];
+            prev.classList.remove("active");
+            prev.classList.add("exiting");
+            next.classList.add("active");
+            setTimeout(function () { prev.classList.remove("exiting"); }, 500);
+        }
+
+        previewRotateTimer = setInterval(rotate, S.rotating.interval);
+    }
+
+    /* Static + countdown preview */
+    function buildStaticPreview() {
+        let textPart = S.texts.length > 0 ? '<span>' + getDisplayContent(S.texts[0]) + '</span>' : '';
+        let cdPart = '<span class="mock-ab-cd mock-ab-cd-' + S.countdown.position + '" id="mockCountdown"></span>';
+        if (S.countdown.position === "inline") textPart = "";
+        return '<div class="mock-ab-static">' + textPart + cdPart + '</div>';
+    }
+
+    function initCountdownPreview() {
+        const el = document.getElementById("mockCountdown");
+        if (!el) return;
+
+        const target = S.countdown.targetDate ? new Date(S.countdown.targetDate).getTime() : 0;
+        function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+        function tick() {
+            if (!target) { el.textContent = "Set a date →"; return; }
+            const diff = target - Date.now();
+            if (diff <= 0) { el.textContent = S.countdown.expiredText; clearInterval(previewCountdownTimer); return; }
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            const labels = S.countdown.labelStyle === "full"
+                ? { d: " days", h: " hours", m: " min", s: " sec" }
+                : { d: "d", h: "h", m: "m", s: "s" };
+            const sep = '<span class="mock-ab-cd-sep">' + S.countdown.separator + '</span>';
+            const parts = [
+                '<span class="mock-ab-cd-unit"><span class="mock-ab-cd-num">' + pad(d) + '</span>' + (S.countdown.showLabels ? '<span class="mock-ab-cd-label">' + labels.d + '</span>' : '') + '</span>',
+                '<span class="mock-ab-cd-unit"><span class="mock-ab-cd-num">' + pad(h) + '</span>' + (S.countdown.showLabels ? '<span class="mock-ab-cd-label">' + labels.h + '</span>' : '') + '</span>',
+                '<span class="mock-ab-cd-unit"><span class="mock-ab-cd-num">' + pad(m) + '</span>' + (S.countdown.showLabels ? '<span class="mock-ab-cd-label">' + labels.m + '</span>' : '') + '</span>',
+                '<span class="mock-ab-cd-unit"><span class="mock-ab-cd-num">' + pad(s) + '</span>' + (S.countdown.showLabels ? '<span class="mock-ab-cd-label">' + labels.s + '</span>' : '') + '</span>'
+            ];
+            el.innerHTML = parts.join(sep);
+        }
+
+        tick();
+        previewCountdownTimer = setInterval(tick, 1000);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       CODE GENERATION
+       ═══════════════════════════════════════════════════════════════ */
+    function generateCode() {
+        const cfg = {};
+
+        cfg.mode = S.mode;
+
+        cfg.bar = {};
+        if (S.bar.height !== 40) cfg.bar.height = S.bar.height;
+        if (S.bar.mobileHeight !== 36) cfg.bar.mobileHeight = S.bar.mobileHeight;
+        if (!S.bar.closable) cfg.bar.closable = false;
+        if (S.bar.barLinkUrl) { cfg.bar.barLinkUrl = S.bar.barLinkUrl; cfg.bar.barLinkTarget = S.bar.barLinkTarget; }
+        if (Object.keys(cfg.bar).length === 0) delete cfg.bar;
+
+        cfg.style = {};
+        if (!S.style.useTheme) {
+            cfg.style.useTheme = false;
+            cfg.style.bgColor = S.style.bgColor;
+            cfg.style.textColor = S.style.textColor;
+        }
+        if (S.style.fontSource !== "body") cfg.style.fontSource = S.style.fontSource;
+        if (S.style.fontSize !== 14) cfg.style.fontSize = S.style.fontSize;
+        if (S.style.mobileFontSize !== 12) cfg.style.mobileFontSize = S.style.mobileFontSize;
+        if (S.style.fontWeight !== 400) cfg.style.fontWeight = S.style.fontWeight;
+        if (S.style.letterSpacing !== 0) cfg.style.letterSpacing = S.style.letterSpacing;
+        if (S.style.textTransform !== "none") cfg.style.textTransform = S.style.textTransform;
+        if (Object.keys(cfg.style).length === 0) delete cfg.style;
+
+        if (S.mode === "marquee") {
+            cfg.marquee = {};
+            if (S.marquee.speed !== 50) cfg.marquee.speed = S.marquee.speed;
+            if (S.marquee.direction !== "left") cfg.marquee.direction = S.marquee.direction;
+            if (!S.marquee.pauseOnHover) cfg.marquee.pauseOnHover = false;
+            if (S.marquee.gap !== 60) cfg.marquee.gap = S.marquee.gap;
+            if (Object.keys(cfg.marquee).length === 0) delete cfg.marquee;
+        }
+
+        if (S.mode === "rotating") {
+            cfg.rotating = {};
+            if (S.rotating.interval !== 3000) cfg.rotating.interval = S.rotating.interval;
+            if (S.rotating.animation !== "slideUp") cfg.rotating.animation = S.rotating.animation;
+            if (!S.rotating.pauseOnHover) cfg.rotating.pauseOnHover = false;
+            if (Object.keys(cfg.rotating).length === 0) delete cfg.rotating;
+        }
+
+        if (S.mode === "static" && S.countdown.targetDate) {
+            cfg.countdown = {};
+            cfg.countdown.targetDate = S.countdown.targetDate;
+            if (S.countdown.expiredText !== "Event has started!") cfg.countdown.expiredText = S.countdown.expiredText;
+            if (!S.countdown.showLabels) cfg.countdown.showLabels = false;
+            if (S.countdown.labelStyle !== "short") cfg.countdown.labelStyle = S.countdown.labelStyle;
+            if (S.countdown.separator !== ":") cfg.countdown.separator = S.countdown.separator;
+            if (S.countdown.position !== "right") cfg.countdown.position = S.countdown.position;
+        }
+
+        cfg.texts = S.texts.map(function (t) {
+            let content = t.content;
+            if (t.linkType === "inline" && t.inlineLinks && t.inlineLinks.length) {
+                t.inlineLinks.forEach(function (lnk) {
+                    if (lnk.text && lnk.url) {
+                        content = content.replace(
+                            new RegExp(escRegex(lnk.text), "g"),
+                            '<a href="' + lnk.url + '" target="' + (lnk.target || "_self") + '">' + lnk.text + '</a>'
+                        );
+                    }
+                });
+            }
+            const obj = { content: content };
+            if (t.linkType === "block" && t.linkUrl) {
+                obj.linkUrl = t.linkUrl;
+                if (t.linkTarget !== "_self") obj.linkTarget = t.linkTarget;
+            }
+            return obj;
+        });
+
+        if (S.icons.length > 0) {
+            cfg.icons = S.icons.map(function (ic) {
+                const o = { src: ic.src, size: ic.size || 16 };
+                if (ic.rotate) { o.rotate = true; o.rotateSpeed = ic.rotateSpeed || 3; }
+                return o;
+            });
+        }
+
+        const jsonStr = JSON.stringify(cfg, null, 2);
+
+        const code =
+            '<span class="hl-cmt">&lt;!-- Header Code Injection (Settings → Advanced → Code Injection) --&gt;</span>\n' +
+            '<span class="hl-tag">&lt;link</span> rel=<span class="hl-str">"stylesheet"</span> href=<span class="hl-str">"https://cdn.jsdelivr.net/gh/square-design-lab/Announcement-Bar@latest/announcementBar.css"</span> <span class="hl-tag">/&gt;</span>\n\n' +
+            '<span class="hl-cmt">&lt;!-- Footer Code Injection --&gt;</span>\n' +
+            '<span class="hl-tag">&lt;script&gt;</span>\n' +
+            '<span class="hl-kw">window</span>.SDL_ANNOUNCEMENT_CONFIG = ' + syntaxHighlightJSON(jsonStr) + ';\n' +
+            '<span class="hl-tag">&lt;/script&gt;</span>\n' +
+            '<span class="hl-tag">&lt;script</span> src=<span class="hl-str">"https://cdn.jsdelivr.net/gh/square-design-lab/Announcement-Bar@latest/announcementBar.js"</span><span class="hl-tag">&gt;&lt;/script&gt;</span>';
+
+        document.getElementById("codeOutput").innerHTML = code;
+    }
+
+    function syntaxHighlightJSON(json) {
+        return json
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"([^"]+)":/g, '<span class="hl-key">"$1"</span>:')
+            .replace(/: "([^"]*)"/g, ': <span class="hl-str">"$1"</span>')
+            .replace(/: (true|false)/g, ': <span class="hl-bool">$1</span>')
+            .replace(/: (\d+\.?\d*)/g, ': <span class="hl-num">$1</span>');
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       COPY
+       ═══════════════════════════════════════════════════════════════ */
+    function copyCode() {
+        const el = document.getElementById("codeOutput");
+        const text = el.textContent || el.innerText;
+        navigator.clipboard.writeText(text).then(function () {
+            document.querySelectorAll(".copy-btn").forEach(function (btn) {
+                btn.classList.add("copied");
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+            });
+            setTimeout(function () {
+                document.querySelectorAll(".copy-btn").forEach(function (btn) {
+                    btn.classList.remove("copied");
+                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Code';
+                });
+            }, 2000);
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       INIT
+       ═══════════════════════════════════════════════════════════════ */
+    toggleColorInputs();
+    renderTextBlocks();
+    renderIcons();
+    update();
+    </script>
+</body>
+</html>
