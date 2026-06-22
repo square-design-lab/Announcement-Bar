@@ -572,7 +572,25 @@
                     </div>
                     <div class="toggle-row">
                         <label>Show close button</label>
-                        <input type="checkbox" checked onchange="S.bar.closable=this.checked;update()">
+                        <input type="checkbox" checked onchange="S.bar.closable=this.checked;toggleReopenRow();update()">
+                    </div>
+                    <div class="control-row" id="reopenRow">
+                        <label>Reopen after close</label>
+                        <select id="reopenSelect" onchange="S.bar.reopenAfter=+this.value;update()">
+                            <option value="0">Never (until page refresh)</option>
+                            <option value="5">5 minutes</option>
+                            <option value="15">15 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="180">3 hours</option>
+                            <option value="360">6 hours</option>
+                            <option value="720">12 hours</option>
+                            <option value="1440">1 day</option>
+                            <option value="4320">3 days</option>
+                            <option value="10080">7 days</option>
+                            <option value="43200">30 days</option>
+                        </select>
+                        <div class="helper-text">How long the bar stays hidden after a user closes it. "Never" hides it only for the current browser session.</div>
                     </div>
 
                     <div class="control-row">
@@ -837,7 +855,7 @@
        ═══════════════════════════════════════════════════════════════ */
     const S = {
         mode: "marquee",
-        bar: { height: 40, mobileHeight: 36, closable: true, closeId: "sdl-ab-1", barLinkUrl: "", barLinkTarget: "_self" },
+        bar: { height: 40, mobileHeight: 36, closable: true, closeId: "sdl-ab-1", reopenAfter: 0, barLinkUrl: "", barLinkTarget: "_self" },
         style: { useTheme: true, bgColor: "#1a1a1a", textColor: "#ffffff", fontSource: "body", fontSize: 14, mobileFontSize: 12, fontWeight: 400, letterSpacing: 0, textTransform: "none" },
         marquee: { speed: 50, direction: "left", pauseOnHover: true, gap: 60 },
         rotating: { interval: 3000, animation: "slideUp", pauseOnHover: true },
@@ -890,6 +908,10 @@
     function toggleColorInputs() {
         const show = !document.getElementById("useThemeToggle").checked;
         document.getElementById("colorInputs").style.display = show ? "block" : "none";
+    }
+
+    function toggleReopenRow() {
+        document.getElementById("reopenRow").classList.toggle("hidden", !S.bar.closable);
     }
 
     function handleBarLinkType(val) {
@@ -1133,9 +1155,18 @@
         if (!track) return;
 
         requestAnimationFrame(function () {
-            const singleW = track.scrollWidth;
-            track.innerHTML += track.innerHTML;
-            const dur = singleW / S.marquee.speed;
+            var setW = track.scrollWidth;
+            var viewW = track.parentElement.offsetWidth || 800;
+            var copies = Math.ceil(viewW / setW) + 1;
+            if (copies < 2) copies = 2;
+
+            var oneSet = track.innerHTML;
+            var html = "";
+            for (var i = 0; i < copies * 2; i++) html += oneSet;
+            track.innerHTML = html;
+
+            var halfW = setW * copies;
+            var dur = halfW / S.marquee.speed;
             track.style.setProperty("--mock-duration", dur + "s");
             track.classList.add(S.marquee.direction === "right" ? "animating-right" : "animating");
         });
@@ -1222,6 +1253,7 @@
         if (S.bar.height !== 40) cfg.bar.height = S.bar.height;
         if (S.bar.mobileHeight !== 36) cfg.bar.mobileHeight = S.bar.mobileHeight;
         if (!S.bar.closable) cfg.bar.closable = false;
+        if (S.bar.reopenAfter > 0) cfg.bar.reopenAfter = S.bar.reopenAfter;
         if (S.bar.barLinkUrl) { cfg.bar.barLinkUrl = S.bar.barLinkUrl; cfg.bar.barLinkTarget = S.bar.barLinkTarget; }
         if (Object.keys(cfg.bar).length === 0) delete cfg.bar;
 
@@ -1341,6 +1373,7 @@
        INIT
        ═══════════════════════════════════════════════════════════════ */
     toggleColorInputs();
+    toggleReopenRow();
     renderTextBlocks();
     renderIcons();
     update();

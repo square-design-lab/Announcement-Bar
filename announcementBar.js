@@ -40,6 +40,7 @@ if (!window.sdlAnnouncementBar) {
         mobileHeight: 36,
         closable: true,
         closeId: "sdl-ab-1",
+        reopenAfter: 0,
         barLinkUrl: "",
         barLinkTarget: "_self"
       },
@@ -79,16 +80,41 @@ if (!window.sdlAnnouncementBar) {
 
     let cfg, barEl, rotateTimer, countdownTimer, currentRotateIdx = 0;
 
+    /* ── Dismiss check ───────────────────────────────────────── */
+    function isDismissed() {
+      var key = "sdl-ab-closed-" + cfg.bar.closeId;
+      if (cfg.bar.reopenAfter > 0) {
+        var ts = localStorage.getItem(key);
+        if (!ts) return false;
+        var elapsed = (Date.now() - parseInt(ts, 10)) / 60000;
+        if (elapsed >= cfg.bar.reopenAfter) {
+          localStorage.removeItem(key);
+          return false;
+        }
+        return true;
+      }
+      return !!sessionStorage.getItem(key);
+    }
+
+    function setDismissed() {
+      var key = "sdl-ab-closed-" + cfg.bar.closeId;
+      if (cfg.bar.reopenAfter > 0) {
+        localStorage.setItem(key, String(Date.now()));
+      } else {
+        sessionStorage.setItem(key, "1");
+      }
+    }
+
     /* ── Theme detection ─────────────────────────────────────── */
     function detectTheme() {
-      const nativeBar = document.querySelector(".sqs-announcement-bar");
+      var nativeBar = document.querySelector(".sqs-announcement-bar");
       if (nativeBar) {
-        const textEl = document.querySelector(".sqs-announcement-bar-text-inner") || nativeBar;
+        var textEl = document.querySelector(".sqs-announcement-bar-text-inner") || nativeBar;
         return { bg: rgbToHex(getComputedStyle(nativeBar).backgroundColor), text: rgbToHex(getComputedStyle(textEl).color) };
       }
-      const header = document.querySelector("#header");
+      var header = document.querySelector("#header");
       if (header) {
-        const cs = getComputedStyle(header);
+        var cs = getComputedStyle(header);
         return { bg: rgbToHex(cs.color), text: rgbToHex(cs.backgroundColor) };
       }
       return null;
@@ -96,16 +122,16 @@ if (!window.sdlAnnouncementBar) {
 
     function detectFont(source) {
       if (source === "heading") {
-        const el = document.querySelector("h1, h2, h3, .header-title-text");
+        var el = document.querySelector("h1, h2, h3, .header-title-text");
         return el ? getComputedStyle(el).fontFamily : "inherit";
       }
-      const el = document.querySelector("p, .sqsrte-large, body");
+      var el = document.querySelector("p, .sqsrte-large, body");
       return el ? getComputedStyle(el).fontFamily : "inherit";
     }
 
     /* ── Build text item HTML ────────────────────────────────── */
     function buildTextItem(t) {
-      let html = t.content;
+      var html = t.content;
       if (t.linkUrl) {
         html = '<a href="' + t.linkUrl + '" target="' + (t.linkTarget || "_self") + '" class="sdl-ab-link">' + t.content + '</a>';
       }
@@ -113,8 +139,8 @@ if (!window.sdlAnnouncementBar) {
     }
 
     function buildIconItem(icon) {
-      const cls = icon.rotate ? " sdl-ab-icon-rotate" : "";
-      const style = 'width:' + (icon.size || 16) + 'px;height:' + (icon.size || 16) + 'px;' +
+      var cls = icon.rotate ? " sdl-ab-icon-rotate" : "";
+      var style = 'width:' + (icon.size || 16) + 'px;height:' + (icon.size || 16) + 'px;' +
         (icon.rotate ? '--sdl-ab-rotate-speed:' + (icon.rotateSpeed || 3) + 's;' : '');
       return '<span class="sdl-ab-icon' + cls + '" style="' + style + '">' +
         '<img src="' + icon.src + '" alt="" />' +
@@ -122,8 +148,8 @@ if (!window.sdlAnnouncementBar) {
     }
 
     /* ── Marquee mode ────────────────────────────────────────── */
-    function buildMarqueeContent() {
-      const items = [];
+    function buildMarqueeSet() {
+      var items = [];
       cfg.texts.forEach(function (t, i) {
         items.push(buildTextItem(t));
         if (cfg.icons.length > 0) {
@@ -134,14 +160,21 @@ if (!window.sdlAnnouncementBar) {
     }
 
     function initMarquee(track) {
-      const content = buildMarqueeContent();
-      track.innerHTML = content;
+      var oneSet = buildMarqueeSet();
+      track.innerHTML = oneSet;
 
       requestAnimationFrame(function () {
-        var singleW = track.scrollWidth;
-        track.innerHTML = content + content;
-        var totalW = singleW;
-        var duration = totalW / cfg.marquee.speed;
+        var setW = track.scrollWidth;
+        var viewW = track.parentElement.offsetWidth || window.innerWidth;
+        var copies = Math.ceil(viewW / setW) + 1;
+        if (copies < 2) copies = 2;
+
+        var html = "";
+        for (var i = 0; i < copies * 2; i++) html += oneSet;
+        track.innerHTML = html;
+
+        var halfW = setW * copies;
+        var duration = halfW / cfg.marquee.speed;
         track.style.setProperty("--sdl-ab-duration", duration + "s");
         track.style.setProperty("--sdl-ab-gap", cfg.marquee.gap + "px");
 
@@ -228,7 +261,7 @@ if (!window.sdlAnnouncementBar) {
     function closeBar() {
       if (!barEl) return;
       barEl.classList.add("sdl-ab-closing");
-      sessionStorage.setItem("sdl-ab-closed-" + cfg.bar.closeId, "1");
+      setDismissed();
       setTimeout(function () {
         if (barEl && barEl.parentNode) barEl.parentNode.removeChild(barEl);
       }, 300);
@@ -323,9 +356,14 @@ if (!window.sdlAnnouncementBar) {
         barEl.appendChild(closeBtn);
       }
 
+      /* Inject inside #header, before .header-announcement-bar-wrapper.
+         This keeps the bar within the fixed header so it doesn't overlap. */
       var header = document.querySelector("#header");
-      if (header && header.parentNode) {
-        header.parentNode.insertBefore(barEl, header);
+      var headerBarWrapper = header && header.querySelector(".header-announcement-bar-wrapper");
+      if (headerBarWrapper) {
+        header.insertBefore(barEl, headerBarWrapper);
+      } else if (header) {
+        header.insertBefore(barEl, header.firstChild);
       } else {
         document.body.insertBefore(barEl, document.body.firstChild);
       }
@@ -361,7 +399,7 @@ if (!window.sdlAnnouncementBar) {
     function init() {
       cfg = deepMerge({}, DEFAULTS, window.SDL_ANNOUNCEMENT_CONFIG || {});
 
-      if (cfg.bar.closable && sessionStorage.getItem("sdl-ab-closed-" + cfg.bar.closeId)) return;
+      if (cfg.bar.closable && isDismissed()) return;
 
       if (cfg.style.useTheme) {
         var theme = detectTheme();
