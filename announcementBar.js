@@ -64,7 +64,8 @@ if (!window.sdlAnnouncementBar) {
       rotating: {
         interval: 3000,
         animation: "slideUp",
-        pauseOnHover: true
+        pauseOnHover: true,
+        fadeDuration: 0.5
       },
       countdown: {
         targetDate: "",
@@ -196,17 +197,36 @@ if (!window.sdlAnnouncementBar) {
       container.dataset.animation = cfg.rotating.animation;
       currentRotateIdx = 0;
 
+      var isFadeInOut = cfg.rotating.animation === "fadeInOut";
+      var fadeDur = cfg.rotating.fadeDuration * 1000;
+
+      if (isFadeInOut) {
+        container.style.setProperty("--sdl-ab-fade-duration", cfg.rotating.fadeDuration + "s");
+      }
+
+      var rotating = false;
+
       function rotate() {
+        if (rotating) return;
         var prev = items[currentRotateIdx];
         currentRotateIdx = (currentRotateIdx + 1) % items.length;
         var next = items[currentRotateIdx];
 
-        prev.classList.remove("sdl-ab-rotate-active");
-        prev.classList.add("sdl-ab-rotate-exit");
-
-        next.classList.add("sdl-ab-rotate-active");
-
-        setTimeout(function () { prev.classList.remove("sdl-ab-rotate-exit"); }, 500);
+        if (isFadeInOut) {
+          rotating = true;
+          prev.classList.remove("sdl-ab-rotate-active");
+          prev.classList.add("sdl-ab-rotate-exit");
+          setTimeout(function () {
+            prev.classList.remove("sdl-ab-rotate-exit");
+            next.classList.add("sdl-ab-rotate-active");
+            setTimeout(function () { rotating = false; }, fadeDur);
+          }, fadeDur);
+        } else {
+          prev.classList.remove("sdl-ab-rotate-active");
+          prev.classList.add("sdl-ab-rotate-exit");
+          next.classList.add("sdl-ab-rotate-active");
+          setTimeout(function () { prev.classList.remove("sdl-ab-rotate-exit"); }, 500);
+        }
       }
 
       rotateTimer = setInterval(rotate, cfg.rotating.interval);

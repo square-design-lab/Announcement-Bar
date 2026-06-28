@@ -468,6 +468,9 @@
         }
         .mock-ab-rotate-item.active { opacity: 1; transform: translateY(0); }
         .mock-ab-rotate-item.exiting { opacity: 0; transform: translateY(-100%); }
+        .mock-ab-rotate-wrap[data-animation="fadeInOut"] .mock-ab-rotate-item { transform: none; transition: opacity var(--mock-fade-dur, 0.5s) ease; }
+        .mock-ab-rotate-wrap[data-animation="fadeInOut"] .mock-ab-rotate-item.active { opacity: 1; }
+        .mock-ab-rotate-wrap[data-animation="fadeInOut"] .mock-ab-rotate-item.exiting { opacity: 0; transform: none; }
 
         /* Countdown preview */
         .mock-ab-static { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; height: 100%; padding: 0 30px; }
@@ -659,11 +662,19 @@
                     </div>
                     <div class="control-row">
                         <label>Animation</label>
-                        <select onchange="S.rotating.animation=this.value;update()">
+                        <select onchange="S.rotating.animation=this.value;toggleFadeDurationRow();update()">
                             <option value="slideUp">Slide Up</option>
                             <option value="slideDown">Slide Down</option>
                             <option value="fade">Fade</option>
+                            <option value="fadeInOut">Fade In / Out</option>
                         </select>
+                    </div>
+                    <div class="control-row hidden" id="fadeDurationRow">
+                        <label>Fade duration</label>
+                        <div class="slider-row">
+                            <input type="range" min="0.2" max="2" step="0.1" value="0.5" oninput="S.rotating.fadeDuration=+this.value;this.nextElementSibling.textContent=this.value+'s';update()">
+                            <span class="slider-val">0.5s</span>
+                        </div>
                     </div>
                     <div class="toggle-row">
                         <label>Pause on hover</label>
@@ -858,7 +869,7 @@
         bar: { height: 40, mobileHeight: 36, closable: true, closeId: "sdl-ab-1", reopenAfter: 0, barLinkUrl: "", barLinkTarget: "_self" },
         style: { useTheme: true, bgColor: "#1a1a1a", textColor: "#ffffff", fontSource: "body", fontSize: 14, mobileFontSize: 12, fontWeight: 400, letterSpacing: 0, textTransform: "none" },
         marquee: { speed: 50, direction: "left", pauseOnHover: true, gap: 60 },
-        rotating: { interval: 3000, animation: "slideUp", pauseOnHover: true },
+        rotating: { interval: 3000, animation: "slideUp", pauseOnHover: true, fadeDuration: 0.5 },
         countdown: { targetDate: "", expiredText: "Event has started!", showLabels: true, labelStyle: "short", separator: ":", position: "right" },
         texts: [
             { content: "Free shipping on all orders over $50", linkUrl: "", linkTarget: "_self", linkType: "none", inlineLinks: [] },
@@ -912,6 +923,10 @@
 
     function toggleReopenRow() {
         document.getElementById("reopenRow").classList.toggle("hidden", !S.bar.closable);
+    }
+
+    function toggleFadeDurationRow() {
+        document.getElementById("fadeDurationRow").classList.toggle("hidden", S.rotating.animation !== "fadeInOut");
     }
 
     function handleBarLinkType(val) {
@@ -1181,21 +1196,44 @@
     }
 
     function initRotatingPreview() {
+        const wrap = document.querySelector(".mock-ab-rotate-wrap");
         const items = document.querySelectorAll(".mock-ab-rotate-item");
         if (items.length < 1) return;
         previewRotateIdx = 0;
         items[0].classList.add("active");
 
+        if (wrap) {
+            wrap.dataset.animation = S.rotating.animation;
+            wrap.style.setProperty("--mock-fade-dur", S.rotating.fadeDuration + "s");
+        }
+
         if (items.length < 2) return;
 
+        const isFadeInOut = S.rotating.animation === "fadeInOut";
+        const fadeDur = S.rotating.fadeDuration * 1000;
+        let rotating = false;
+
         function rotate() {
+            if (rotating) return;
             const prev = items[previewRotateIdx];
             previewRotateIdx = (previewRotateIdx + 1) % items.length;
             const next = items[previewRotateIdx];
-            prev.classList.remove("active");
-            prev.classList.add("exiting");
-            next.classList.add("active");
-            setTimeout(function () { prev.classList.remove("exiting"); }, 500);
+
+            if (isFadeInOut) {
+                rotating = true;
+                prev.classList.remove("active");
+                prev.classList.add("exiting");
+                setTimeout(function () {
+                    prev.classList.remove("exiting");
+                    next.classList.add("active");
+                    setTimeout(function () { rotating = false; }, fadeDur);
+                }, fadeDur);
+            } else {
+                prev.classList.remove("active");
+                prev.classList.add("exiting");
+                next.classList.add("active");
+                setTimeout(function () { prev.classList.remove("exiting"); }, 500);
+            }
         }
 
         previewRotateTimer = setInterval(rotate, S.rotating.interval);
@@ -1284,6 +1322,7 @@
             cfg.rotating = {};
             if (S.rotating.interval !== 3000) cfg.rotating.interval = S.rotating.interval;
             if (S.rotating.animation !== "slideUp") cfg.rotating.animation = S.rotating.animation;
+            if (S.rotating.animation === "fadeInOut" && S.rotating.fadeDuration !== 0.5) cfg.rotating.fadeDuration = S.rotating.fadeDuration;
             if (!S.rotating.pauseOnHover) cfg.rotating.pauseOnHover = false;
             if (Object.keys(cfg.rotating).length === 0) delete cfg.rotating;
         }

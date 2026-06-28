@@ -199,6 +199,17 @@
 [data-animation="fade"] .sdl-ab-rotate-item.sdl-ab-rotate-exit {
   opacity: 0;
 }
+/* fadeInOut: sequential fade-out then fade-in (no overlap) */
+[data-animation="fadeInOut"] .sdl-ab-rotate-item {
+  transform: none;
+  transition: opacity var(--sdl-ab-fade-duration, 0.5s) ease;
+}
+[data-animation="fadeInOut"] .sdl-ab-rotate-item.sdl-ab-rotate-active {
+  opacity: 1;
+}
+[data-animation="fadeInOut"] .sdl-ab-rotate-item.sdl-ab-rotate-exit {
+  opacity: 0;
+}
 
 /* =================================================================
    MODE: STATIC + COUNTDOWN
